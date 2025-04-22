@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { gapi } from 'gapi-script';
 
-const CLIENT_ID = "229454454543-55trdqt3mdn401515uvkr7fevv62kvua.apps.googleusercontent.com";
-const API_KEY = "AIzaSyAe4RTmtgBN7T-ijI8FQ-t9fClV52ko0h8";
-const SCOPES = "https://www.googleapis.com/auth/gmail.modify";
 
+const CLIENT_ID = process.env.REACT_APP_CLIENT_ID
+const API_KEY = process.env.REACT_APP_API_KEY
+const SCOPES = process.env.REACT_APP_SCOPES
 
 function GmailClient() {
   const [emails, setEmails] = useState([]);
