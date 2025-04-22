@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pickle
 import numpy as np
 
@@ -10,6 +11,16 @@ with open("tfidf_vectorizer.pkl", "rb") as vec_file:
     vectorizer = pickle.load(vec_file)
 
 app = Flask(__name__)
+
+# Enable CORS for all origins or specific origin
+CORS(app)  # Allows all origins
+# If you want to restrict to specific origins, use:
+# CORS(app, origins=["http://localhost:3000"])
+
+@app.before_request
+def log_request_info():
+    """ Log the accessed path before each request. """
+    print(f"Accessed Path: {request.path}")
 
 @app.route("/check_spam", methods=["POST"])
 def check_spam():
@@ -23,15 +34,19 @@ def check_spam():
     prediction = model.predict(vectorized_text)[0]
     proba = model.predict_proba(vectorized_text)[0][1]
 
-    # Simple spam type description logic (can be improved)
-    if "lottery" in text.lower():
+    # Rule-based override
+    text_lower = text.lower()
+    if "lottery" in text_lower:
         description = "Lottery scam"
-    elif "free" in text.lower():
+        prediction = 1  # Force is_spam = True
+    elif "free" in text_lower:
         description = "Free offer spam"
-    elif "urgent" in text.lower():
+        prediction = 1
+    elif "urgent" in text_lower:
         description = "Urgent phishing email"
+        prediction = 1
     else:
-        description = "General spam"
+        description = "General spam" if prediction else "Likely safe"
 
     return jsonify({
         "is_spam": bool(prediction),
@@ -39,5 +54,6 @@ def check_spam():
         "description": description
     })
 
+    
 if __name__ == "__main__":
     app.run(debug=True)
