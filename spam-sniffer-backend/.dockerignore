@@ -1,0 +1,28 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore model training notebook if present
+*.ipynb
+
+# Ignore data files not needed in production
+spam_ham_dataset.csv
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore version control
+.git
+.gitignore
+
+# Ignore build artifacts
+*.log
+*.egg-info/
+dist/
+build/
+
+# Ignore virtual environments
+venv/
+.env/
