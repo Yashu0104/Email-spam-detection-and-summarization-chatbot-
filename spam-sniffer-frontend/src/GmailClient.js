@@ -162,7 +162,7 @@ function GmailClient() {
       )}
 
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">📬 Gmail Spam Detector</h2>
+        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">📬 Hello Spam Detector</h2>
 
         {/* 🔘 Control Buttons */}
         <div className="flex gap-4 justify-center mb-8">
