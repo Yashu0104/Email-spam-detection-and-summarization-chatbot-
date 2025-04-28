@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { gapi } from 'gapi-script';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { gapi } from "gapi-script";
 
 const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const API_KEY = process.env.REACT_APP_API_KEY;
@@ -18,7 +18,9 @@ function GmailClient() {
           apiKey: API_KEY,
           clientId: CLIENT_ID,
           scope: SCOPES,
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest"],
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
+          ],
         })
         .then(() => {
           console.log("GAPI client initialized");
@@ -72,8 +74,22 @@ function GmailClient() {
     }
 
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0
+    );
+    const endOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59
+    );
     const after = Math.floor(startOfDay.getTime() / 1000);
     const before = Math.floor(endOfDay.getTime() / 1000);
 
@@ -143,11 +159,16 @@ function GmailClient() {
         userId: "me",
         id: emailId,
       });
-      setEmails((prevEmails) => prevEmails.filter((email) => email.id !== emailId));
+      setEmails((prevEmails) =>
+        prevEmails.filter((email) => email.id !== emailId)
+      );
       console.log("Email moved to trash:", emailId);
     } catch (error) {
       console.error("Error trashing email:", error);
-      alert("Failed to delete email: " + (error?.result?.error?.message || "Unknown error"));
+      alert(
+        "Failed to delete email: " +
+          (error?.result?.error?.message || "Unknown error")
+      );
     }
   };
 
@@ -162,17 +183,28 @@ function GmailClient() {
       )}
 
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">📬 Gmail Spam Detector</h2>
+        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">
+          📬 Email Spam Detector
+        </h2>
 
         {/* 🔘 Control Buttons */}
         <div className="flex gap-4 justify-center mb-8">
-          <button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-all">
+          <button
+            onClick={handleLogin}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          >
             Login with Gmail
           </button>
-          <button onClick={handleLogout} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-md transition-all">
+          <button
+            onClick={handleLogout}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          >
             Logout
           </button>
-          <button onClick={loadEmails} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-all">
+          <button
+            onClick={loadEmails}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          >
             Refresh Emails
           </button>
         </div>
@@ -180,38 +212,69 @@ function GmailClient() {
         {/* 📧 Emails List */}
         {emails.length > 0 ? (
           <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-gray-700">Today's Unread Emails:</h4>
+            <h4 className="text-xl font-semibold text-gray-700">
+              Today's Unread Emails:
+            </h4>
             {emails.map((email) => {
               const spamResult = spamResults[email.id];
-              const from = email.payload.headers.find((h) => h.name === "From")?.value;
-              const subject = email.payload.headers.find((h) => h.name === "Subject")?.value;
+              const from = email.payload.headers.find(
+                (h) => h.name === "From"
+              )?.value;
+              const subject = email.payload.headers.find(
+                (h) => h.name === "Subject"
+              )?.value;
 
               return (
                 <div
                   key={email.id}
                   className="bg-white rounded-xl shadow-md p-4 transition-transform transform hover:scale-[1.01] hover:shadow-lg"
                 >
-                  <h5 className="text-md font-semibold text-gray-800">{from}</h5>
-                  <p className="text-sm text-gray-600 mb-2"><strong>Subject:</strong> {subject}</p>
-                  <pre className="text-sm text-gray-700 bg-gray-100 p-2 rounded overflow-auto">{email.snippet}</pre>
+                  <h5 className="text-md font-semibold text-gray-800">
+                    {from}
+                  </h5>
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>Subject:</strong> {subject}
+                  </p>
+                  <pre className="text-sm text-gray-700 bg-gray-100 p-2 rounded overflow-auto">
+                    {email.snippet}
+                  </pre>
 
                   <div className="flex gap-3 mt-3">
-                    <button onClick={() => checkSpam(email.id, email.snippet)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition">
+                    <button
+                      onClick={() => checkSpam(email.id, email.snippet)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
+                    >
                       Check for Spam
                     </button>
-                    <button onClick={() => markAsRead(email.id)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition">
+                    <button
+                      onClick={() => markAsRead(email.id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition"
+                    >
                       Mark as Read
                     </button>
-                    <button onClick={() => deleteEmail(email.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">
+                    <button
+                      onClick={() => deleteEmail(email.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition"
+                    >
                       Delete Email
                     </button>
                   </div>
 
                   {spamResult && (
                     <div className="mt-4 bg-gray-50 border-l-4 border-yellow-400 p-3 rounded-md animate-fade-in">
-                      <p><strong>Spam?</strong> {spamResult.is_spam ? '✅ Yes' : '❌ No'}</p>
-                      <p><strong>Spam Score:</strong> {spamResult.spam_score}</p>
-                      <p><strong>Type:</strong> {spamResult.description}</p>
+                      <p>
+                        <strong>Spam?</strong>{" "}
+                        {spamResult.is_spam ? "✅ Yes" : "❌ No"}
+                      </p>
+                      <p>
+                        <strong>Spam Score:</strong> {spamResult.spam_score}
+                      </p>
+                      <p>
+                        <strong>Type:</strong> {spamResult.description}
+                      </p>
+                      <p>
+                        <strong>Summary:</strong> {spamResult.summary}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -219,7 +282,9 @@ function GmailClient() {
             })}
           </div>
         ) : (
-          <p className="text-center text-gray-600 mt-6">No unread emails found for today.</p>
+          <p className="text-center text-gray-600 mt-6">
+            No unread emails found for today.
+          </p>
         )}
       </div>
     </div>

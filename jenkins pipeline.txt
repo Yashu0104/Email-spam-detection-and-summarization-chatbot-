@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+    
+    environment {
+
+        DOCKER_HOST = 'npipe:////./pipe/docker_engine'
+        COMPOSE_CMD = 'docker-compose.exe'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', 
+                url: 'https://github.com/Yashu0104/Email-spam-detection-and-summarization-chatbot-.git'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                bat """
+                set DOCKER_HOST=${DOCKER_HOST}
+                ${COMPOSE_CMD} down --remove-orphans || echo "No running containers"
+                ${COMPOSE_CMD} build --no-cache
+                """
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                bat """
+                set DOCKER_HOST=${DOCKER_HOST}
+                ${COMPOSE_CMD} up -d
+                """
+            }
+        }
+    }
+    
+    post {
+        always {
+            
+            script {
+                echo "Pipeline completed - status: ${currentBuild.result ?: 'SUCCESS'}"
+            }
+        }
+    }
+}
