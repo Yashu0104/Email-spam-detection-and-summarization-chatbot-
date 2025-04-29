@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   backend:
@@ -8,6 +8,10 @@ services:
       - "5000:5000"
     volumes:
       - ./spam-sniffer-backend:/app
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/spam_sniffer
+    depends_on:
+      - mongo
     restart: always
 
   frontend:
@@ -17,4 +21,18 @@ services:
       - "3000:80"
     volumes:
       - ./spam-sniffer-frontend:/app
+    depends_on:
+      - backend
     restart: always
+
+  mongo:
+    image: mongo:6.0
+    container_name: spam-sniffer-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+
+volumes:
+  mongo-data:

@@ -1,5 +1,5 @@
 import React from 'react';
-import GmailClient from './GmailClient';
+import GmailClient from './Components/GmailClient';
 
 function App() {
   return (
