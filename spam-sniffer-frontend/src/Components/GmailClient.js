@@ -6,10 +6,12 @@ const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 const API_KEY = process.env.REACT_APP_API_KEY;
 const SCOPES = process.env.REACT_APP_SCOPES;
 
-function GmailClient() {
+function GmailClient({ gmail }) {
   const [emails, setEmails] = useState([]);
   const [spamResults, setSpamResults] = useState({});
-  const [user, setUser] = useState(null); // 👤 Store user info
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState({ name: gmail, email: gmail }); // placeholder since no profile info
+  const appUser = localStorage.getItem("userEmail");
 
   useEffect(() => {
     function start() {
@@ -23,104 +25,53 @@ function GmailClient() {
           ],
         })
         .then(() => {
-          console.log("GAPI client initialized");
+          console.log("GAPI initialized");
+          loadEmails(); // Load emails immediately for selected account
         })
         .catch((error) => {
-          console.error("Error initializing GAPI client", error);
+          console.error("GAPI init failed", error);
         });
     }
 
     gapi.load("client:auth2", start);
-  }, []);
-
-  const handleLogin = async () => {
-    try {
-      const authInstance = gapi.auth2.getAuthInstance();
-      const googleUser = await authInstance.signIn();
-      const profile = googleUser.getBasicProfile();
-
-      setUser({
-        name: profile.getName(),
-        email: profile.getEmail(),
-      });
-
-      console.log("Signed in!", profile.getName());
-
-      if (!gapi.client.gmail) {
-        await gapi.client.load("gmail", "v1");
-        console.log("Gmail API loaded");
-      }
-
-      loadEmails();
-    } catch (error) {
-      console.error("Error during login or Gmail API loading", error);
-    }
-  };
-
-  const handleLogout = () => {
-    const authInstance = gapi.auth2.getAuthInstance();
-    authInstance.disconnect().then(() => {
-      console.log("User signed out and disconnected.");
-      setEmails([]);
-      setSpamResults({});
-      setUser(null);
-    });
-  };
+  }, [gmail]);
 
   const loadEmails = async () => {
-    if (!gapi.client.gmail || !gapi.client.gmail.users) {
-      console.error("Gmail API not loaded yet.");
+    if (!gapi.client.gmail?.users) {
+      console.error("Gmail API not ready");
       return;
     }
 
     const now = new Date();
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0,
-      0,
-      0
+    const after = Math.floor(new Date(now.setHours(0, 0, 0)).getTime() / 1000);
+    const before = Math.floor(
+      new Date(now.setHours(23, 59, 59)).getTime() / 1000
     );
-    const endOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59
-    );
-    const after = Math.floor(startOfDay.getTime() / 1000);
-    const before = Math.floor(endOfDay.getTime() / 1000);
-
-    const query = `is:unread after:${after} before:${before}`;
 
     try {
+      setLoading(true);
       const response = await gapi.client.gmail.users.messages.list({
         userId: "me",
-        q: query,
+        q: `is:unread after:${after} before:${before}`,
       });
 
-      if (response.result.messages) {
-        const messages = response.result.messages;
-        const emailDetails = await Promise.all(
-          messages.map(async (message) => {
-            const email = await gapi.client.gmail.users.messages.get({
-              userId: "me",
-              id: message.id,
-              format: "full",
-            });
-            return email.result;
-          })
-        );
+      const messageList = response.result.messages || [];
+      const emailDetails = await Promise.all(
+        messageList.map(async (msg) => {
+          const email = await gapi.client.gmail.users.messages.get({
+            userId: "me",
+            id: msg.id,
+            format: "full",
+          });
+          return email.result;
+        })
+      );
 
-        setEmails(emailDetails);
-      } else {
-        setEmails([]);
-        console.log("No unread emails found for today.");
-      }
-    } catch (error) {
-      console.error("Error fetching emails", error);
+      setEmails(emailDetails);
+    } catch (err) {
+      console.error("Error fetching emails", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,12 +81,12 @@ function GmailClient() {
         text: emailBody,
       });
 
-      setSpamResults((prevResults) => ({
-        ...prevResults,
+      setSpamResults((prev) => ({
+        ...prev,
         [emailId]: res.data,
       }));
     } catch (error) {
-      console.error("Error checking spam:", error);
+      console.error("Spam check failed:", error);
     }
   };
 
@@ -147,9 +98,8 @@ function GmailClient() {
         removeLabelIds: ["UNREAD"],
       });
       setEmails((prev) => prev.filter((email) => email.id !== emailId));
-      console.log("Email marked as read:", emailId);
     } catch (error) {
-      console.error("Error marking email as read:", error);
+      console.error("Mark as read failed:", error);
     }
   };
 
@@ -159,62 +109,44 @@ function GmailClient() {
         userId: "me",
         id: emailId,
       });
-      setEmails((prevEmails) =>
-        prevEmails.filter((email) => email.id !== emailId)
-      );
-      console.log("Email moved to trash:", emailId);
+      setEmails((prev) => prev.filter((email) => email.id !== emailId));
     } catch (error) {
-      console.error("Error trashing email:", error);
+      console.error("Email delete failed:", error);
       alert(
-        "Failed to delete email: " +
-          (error?.result?.error?.message || "Unknown error")
+        "Failed to delete email: " + (error?.result?.error?.message || "Unknown")
       );
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6 relative">
-      {/* 👤 Top-right user info */}
+    <div className="min-h-screen bg-blue-50 p-6 relative">
       {user && (
-        <div className="absolute top-4 right-4 bg-white shadow-md px-4 py-2 rounded-lg text-sm text-gray-800 transition-all duration-300 ease-in-out">
-          <p className="font-semibold">{user.name}</p>
-          <p className="text-xs text-gray-600">{user.email}</p>
+        <div className="absolute top-4 right-4 bg-white px-4 py-2 shadow rounded text-sm">
+          <p className="font-bold">{user.name}</p>
+          <p className="text-xs">{user.email}</p>
         </div>
       )}
 
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">
+        <h2 className="text-2xl font-bold text-center text-blue-800 mb-6">
           📬 Email Spam Detector
         </h2>
 
-        {/* 🔘 Control Buttons */}
-        <div className="flex gap-4 justify-center mb-8">
-          <button
-            onClick={handleLogin}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
-          >
-            Login with Gmail
-          </button>
-          <button
-            onClick={handleLogout}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
-          >
-            Logout
-          </button>
+        <div className="flex justify-end gap-4 mb-4">
           <button
             onClick={loadEmails}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
           >
-            Refresh Emails
+            Refresh
           </button>
         </div>
 
-        {/* 📧 Emails List */}
+        {loading && (
+          <p className="text-center text-gray-500">Loading emails...</p>
+        )}
+
         {emails.length > 0 ? (
           <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-gray-700">
-              Today's Unread Emails:
-            </h4>
             {emails.map((email) => {
               const spamResult = spamResults[email.id];
               const from = email.payload.headers.find(
@@ -227,41 +159,39 @@ function GmailClient() {
               return (
                 <div
                   key={email.id}
-                  className="bg-white rounded-xl shadow-md p-4 transition-transform transform hover:scale-[1.01] hover:shadow-lg"
+                  className="bg-white p-4 shadow rounded-md"
                 >
-                  <h5 className="text-md font-semibold text-gray-800">
-                    {from}
-                  </h5>
+                  <h4 className="text-md font-semibold">{from}</h4>
                   <p className="text-sm text-gray-600 mb-2">
                     <strong>Subject:</strong> {subject}
                   </p>
-                  <pre className="text-sm text-gray-700 bg-gray-100 p-2 rounded overflow-auto">
+                  <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
                     {email.snippet}
                   </pre>
 
-                  <div className="flex gap-3 mt-3">
+                  <div className="flex gap-3 mt-2">
                     <button
                       onClick={() => checkSpam(email.id, email.snippet)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
+                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
                     >
-                      Check for Spam
+                      Check Spam
                     </button>
                     <button
                       onClick={() => markAsRead(email.id)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition"
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                     >
                       Mark as Read
                     </button>
                     <button
                       onClick={() => deleteEmail(email.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition"
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     >
-                      Delete Email
+                      Delete
                     </button>
                   </div>
 
                   {spamResult && (
-                    <div className="mt-4 bg-gray-50 border-l-4 border-yellow-400 p-3 rounded-md animate-fade-in">
+                    <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-md">
                       <p>
                         <strong>Spam?</strong>{" "}
                         {spamResult.is_spam ? "✅ Yes" : "❌ No"}
@@ -281,11 +211,11 @@ function GmailClient() {
               );
             })}
           </div>
-        ) : (
-          <p className="text-center text-gray-600 mt-6">
+        ) : !loading ? (
+          <p className="text-center text-gray-500">
             No unread emails found for today.
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );

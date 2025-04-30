@@ -1,12 +1,20 @@
-import React from 'react';
-import GmailClient from './Components/GmailClient';
+// src/App.js
 
-function App() {
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import LoginPage from './Pages/LoginPage';
+import DashboardPage from './Pages/DashboardPage';
+
+const App = () => {
   return (
-    <div className="App">
-      <GmailClient />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Other routes */}
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
